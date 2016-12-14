@@ -475,7 +475,8 @@ Private Sub SubmitButton_Click()
     wbNew.Range("A2:A500").Locked = False
     wbNew.Protect Password:="Spinelli36"
     
-wbNam = waterMark & reportName & dt
+    wbNam = waterMark & reportName & dt
     ActiveWorkbook.SaveAs Filename:=wbNam
+    Unload Me
    
 End Sub
