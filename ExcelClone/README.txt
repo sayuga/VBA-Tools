@@ -36,12 +36,12 @@ Even if the source data is fed as a protected sheet, this macro will copy all en
 1. Select the 'Developer' tab on the ribbon and select 'Insert' -> 'Button'
 2. Place the button at a desired location on the spreadsheet. Note: Button should be outside of the data source range (A1:BZ5000) such as column CA. 
 3. Select 'New'
-4. In the workbook code area that appears add 'CustomReport.Show'. Should look like:
+4. In the workbook code area that appears add 'ExcelClone.Show'. Should look like:
 
  		Sub Button1_Click()
-		CustomReport.Show
+		ExcelClone.Show
 		End Sub
-5. Import the file 'CustomReport.frx'
+5. Import the file 'ExcelClone.frm'
 6. Right click the button on the Spreadsheet and select 'Edit Text'
 7. Rename the button accordingly. Example: 'Custom Report'
 
