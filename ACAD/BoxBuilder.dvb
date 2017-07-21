@@ -1,0 +1,218 @@
+Private Sub myBoxBuilder ()
+'TO USE THIS BLOCK BOX BUILDER, YOU MUST HAVE A TABLE LINKED
+'THAT HAS THE FOLLOWING COLUMNS IN THE FOLLOWING ORDER:
+'[BLOCKNAME, BLOCK DESCRIPTION, LENGTH, WIDTH, HEIGHT]
+
+On Error GoTo GetBOMTableItemsErr
+
+'Doc Dims
+Dim ThisDrawing As AutoCAD.AcadDocument
+Dim SS1 As Object
+Dim FilterType(0) As Integer
+Dim FilterData(0) As Variant
+
+'Data Manager Dims
+Dim CurTable As Object ' Current table
+Dim CRow As Integer ' Current Row
+Dim cLength As String 'length value from cell
+Dim cWidth As String ' width value from cell
+Dim cHeight As String ' height value from cell
+Dim I As Integer
+
+'General Dims
+Dim insertionPntA(0 To 2) As Double
+Dim insertionPntB(0 To 2) As Double
+Dim Name As String
+
+'Item Block Dims
+Dim blockname As String
+Dim blockObj As AcadBlock
+Dim boxObj As Acad3DSolid
+Dim length As Double, Width As Double, height As Double
+Dim center(0 To 2) As Double
+Dim blockRefObj As AcadBlockReference
+
+'Text Block Dims
+Dim layerName As String
+Dim bName As String
+Dim bDesc As String
+Dim blockname2 As String
+Dim layerObj As AcadLayer
+Dim blockObj2 As AcadBlock
+Dim blockRefObj2 As AcadBlockReference
+
+DoEvents
+'Set Values
+    Set ThisDrawing = AutoCAD.Application.ActiveDocument 'Gets currently Active Document
+    FilterType(0) = 0 ' Looks at first table
+    FilterData(0) = "ACAD_TABLE" 'Data Filter for ACAD
+    layerName = "BLKTXT" ' Layer name assigned to Text blocks
+    
+    DoEvents
+        'Doc Identifiers
+        Set SS1 = ThisDrawing.SelectionSets.Item("SS1")
+        If SS1 Is Nothing Then
+            Set SS1 = ThisDrawing.SelectionSets.Add("SS1")
+        Else
+            SS1.Clear
+        End If
+        
+
+        SS1.Select acSelectionSetAll, , , FilterType, FilterData 'Gets data filtered to Linked DataTable
+
+        'Data Manager
+        If SS1.Count > 0 Then
+            For Each CurTable In SS1 ' Process the Tables on this drawing
+            For CRow = 1 To CurTable.Rows - 1
+                
+                bName = CurTable.GetCellValue(CRow, 0)      'Reads cell value on BlockID Column for current row (CRow)
+                bDesc = CurTable.GetCellValue(CRow, 1)      'Reads cell value on BlockDesc Column for current row (CRow)
+                cLength = CurTable.GetCellValue(CRow, 2)    'Reads cell value on Length Column for current row (CRow)
+                cWidth = CurTable.GetCellValue(CRow, 3)     'Reads cell value on Width Column for current row (CRow)
+                cHeight = CurTable.GetCellValue(CRow, 4)    'Reads cell value on HeightColumn for current row (CRow)
+
+                DoEvents
+        
+                dataLoop cLength, CRow, 0, CurTable   ' Render Data Cell "cLength"
+                dataLoop cWidth, CRow, 1, CurTable    ' Render Data Cell "cWidth"
+                dataLoop cHeight, CRow, 2, CurTable   ' Render Data Cell "cHeight"
+                dataLoop bName, CRow, 3, CurTable     ' Render Data Cell "bName"
+                dataLoop bDesc, CRow, 4, CurTable     ' Render Data Cell "bName"
+                I = I + 1
+
+                'GENERAL
+        
+                'Insertion point for block relative to grid
+                insertionPntA(0) = 0
+                insertionPntA(1) = 0
+                insertionPntA(2) = 0
+        
+                'Insertion point for block with offset for Current Row
+                insertionPntB(0) = 0 + Val(CRow * 100) 'offset 100 pixels to the right
+                insertionPntB(1) = 0
+                insertionPntB(2) = cHeight / 2
+        
+                Name = CRow ' RowCounter/NameIdentity
+    
+                'ITEM BLOCK - BLOCK ONE
+                blockname = Name + "_Block" ' Define the object block name
+                Set blockObj = ThisDrawing.Blocks.Add(insertionPntA, blockname) 'Creates and Defines Block
+                center(0) = 5#: center(1) = 5#: center(2) = 0 'Center Dimension
+                length = Val(cLength): Width = Val(cWidth): height = Val(cHeight) ' Box Layout dimensions
+                Set boxObj = blockObj.AddBox(center, length, Width, height) 'Creates the box (3DSolid) object in model space
+                Set blockRefObj = ThisDrawing.ModelSpace.InsertBlock(insertionPntB, blockname, 1#, 1#, 1#, 0) 'inserts the block
+                
+                'TEXT BLOCK - BLOCK TWO
+                blockname2 = Name + "_Text" 'Define the Text Block Name
+                bName1 = bName  ' Block ID
+                bDesc1 = bDesc  ' Block Description
+                Set blockObj2 = ThisDrawing.Blocks.Add(insertionPntA, blockname2) 'Creates and Defines Block
+                Set layerObj = ThisDrawing.Layers.Add(layerName) 'Create a new layer called "BLKTXT"
+                                
+                Slots 20, 5, layerName, blockObj2, 3.5, 4, 0 'Adds slot box frame for blockname multitext
+                myMultiText blockObj2, layerName, bName1, -3.5, 5.5, 0, 15  'Adds a text box with BlockI ID
+                myMultiText blockObj2, layerName, bDesc1, -11, 1.5, 0, 30 'Add a second text box with Block Description
+                Set blockRefObj2 = ThisDrawing.ModelSpace.InsertBlock(insertionPntB, blockname2, 1#, 1#, 1#, 0) 'insert the block
+                                                               
+                Next CRow 'NEXT DATA ROW
+                Next CurTable 'NEXT TABLE
+        End If
+        
+        If Not SS1 Is Nothing Then
+            SS1.Clear
+            SS1.Delete
+            Set SS1 = Nothing
+        End If
+        
+        If I = 0 Then
+            MsgBox " All Table Text Fixed!", vbInformation, "No Table Text Problems"
+        Else
+            MsgBox " All Table Text Fixed!", vbInformation, "Number of cells fixed " & I
+        End If
+        
+Exit Sub
+GetBOMTableItemsErr:
+
+    If UCase$(Error) Like "*KEY NOT FOUND*" Then
+        Resume Next
+    Else
+        MsgBox Error
+        Resume Next
+    End If
+        
+End Sub
+'Identifies Cell Data and adjusts it for User Display
+Private Sub dataLoop(Celltext As String, CRow As Integer, ColNum As Integer, CurTable As Object)
+    Dim PPos As Integer
+    If Celltext Like "{*;*" Then
+            PPos = InStrRev(Celltext, ";")
+            If PPos > 0 Then
+                Celltext = Mid(Celltext, PPos + 1, Len(Celltext) - PPos)
+                If Celltext Like "*}" Then
+                    Celltext = Left(Celltext, Len(Celltext) - 1)
+                End If
+                CurTable.SetCellValue CRow, ColNum, Celltext
+            End If
+        End If
+End Sub
+Private Sub myMultiText(blockObj, layerName, textValue, xpos, ypos, zpos, Width As Double)
+
+    Dim textObj As AcadMText 'AcadText
+    Dim pos(0 To 2) As Double 'Position of Text block
+    pos(0) = xpos ' x position
+    pos(1) = ypos ' y position
+    pos(2) = zpos ' z position
+    
+    Set textObj = blockObj.AddMText(pos, Width, textValue)
+    '.AddText(textValue, pos, valD) ' Create The block text using given text value at given position
+    textObj.Layer = layerName 'Assigns the block text to the "BLKTXT" layer
+    textObj.height = 3
+    textObj.LineSpacingFactor = 1#
+    textObj.AttachmentPoint = acAttachmentPointTopCenter
+    textObj.Update ' updates all the changes made
+
+End Sub
+'This function converts Degrees to Radians
+Function dtr(a As Double) As Double
+Const pi = 3.14159265358979
+    dtr = (a / 180) * pi
+End Function
+Private Sub Slots(SlotLength As Double, SlotDia As Double, layerName, blockObj, xpos, ypos, zpos) 'define the function
+    
+    Dim InsertPoint As Variant
+    Dim pt1 As Variant
+    Dim pt2 As Variant
+    Dim pt3 As Variant
+    Dim pt4 As Variant
+    Dim pt5 As Variant
+    Dim pt6 As Variant
+    Dim pt7 As Variant
+    Dim LineObj As AcadLine
+    Dim ArcObj As AcadArc
+    Dim pos(0 To 2) As Double 'Position of Slot Frame
+    pos(0) = xpos 'x position
+    pos(1) = ypos 'y position
+    pos(2) = zpos 'z position
+          
+    On Error Resume Next
+    InsertPoint = pos 'Insertion point
+     
+    'calculate all the points using the PolarPoint Function
+    pt1 = ThisDrawing.Utility.PolarPoint(InsertPoint, dtr(270#), SlotDia / 2)
+    pt2 = ThisDrawing.Utility.PolarPoint(pt1, dtr(180#), SlotLength / 2)
+    pt3 = ThisDrawing.Utility.PolarPoint(pt2, dtr(90#), SlotDia)
+    pt4 = ThisDrawing.Utility.PolarPoint(pt3, dtr(0#), SlotLength)
+    pt5 = ThisDrawing.Utility.PolarPoint(pt4, dtr(270#), SlotDia)
+    pt6 = ThisDrawing.Utility.PolarPoint(InsertPoint, dtr(180#), SlotLength / 2)
+    pt7 = ThisDrawing.Utility.PolarPoint(InsertPoint, dtr(0#), SlotLength / 2)
+     
+    'Draw the Slot Frame
+    Set LineObj = blockObj.AddLine(pt5, pt2)
+    Set LineObj = blockObj.AddLine(pt3, pt4)
+    Set ArcObj = blockObj.AddArc(pt6, SlotDia / 2, dtr(90), dtr(270))
+    Set ArcObj = blockObj.AddArc(pt7, SlotDia / 2, dtr(270), dtr(90))
+     
+    Err.Clear 'just in case of error
+    On Error GoTo 0
+     'turn off error trapping
+End Sub
