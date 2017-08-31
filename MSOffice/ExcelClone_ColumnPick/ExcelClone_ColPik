@@ -61,7 +61,7 @@ Function customRangeReport(colList As Variant, rName As String)
         .Protect Password:="Spinelli36"
         
         desktopFolderPath = CreateObject("WScript.Shell").specialfolders("Desktop")
-        fName = desktopFolderPath & rName & waterMark & ".xls"
+        fName = desktopFolderPath & rName & waterMark & ".xlsx"
          'SELECT ALL
          .SaveAs fName
     End With
