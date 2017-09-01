@@ -1,3 +1,10 @@
+
+Developer: Jonathan Vargas 
+Version: 1.0.0
+Revision Date: 09-01-2017
+Requires: Macro-Enabled Excel File
+Copyright: MIT/X11
+
 Description: 
 Macro function that allows a clone of columns from an active worksheet into a new workbook.
 Optional columns definition allows to define the columns to be copied over thus allowing custom reports with a single click. 
