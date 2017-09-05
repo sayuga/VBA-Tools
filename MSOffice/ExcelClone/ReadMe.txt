@@ -1,3 +1,7 @@
+NOTE: THIS VERSION HAS BEEN DEPRECATED AND REPLACED WITH THE 'ExcelClone_ColumnPick'. PLEASE USE LINK BLOW FOR REFERENCE. THIS NEW CODE CREATES A MORE STABLE FULL CLONE AS WELL AS ALLOWS COLUMN PICKING. 
+https://github.com/sayuga/VBA-Tools/tree/master/MSOffice/ExcelClone_ColumnPick
+
+***********************************************************************************************************************************
 ===Excel Cloner VBA===
 
 Developer: Jonathan Vargas 
